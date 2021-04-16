@@ -1,26 +1,28 @@
+import { createGalactic } from "galactic-state"
+
 // Standard interface and functions
-export interface Todo {
+interface Todo {
   id: number;
   text: string;
   done: boolean;
 }
 
-export const updateTodo = (todos: Todo[], id: number, text: string): Todo[] =>
+const updateTodo = (todos: Todo[], id: number, text: string): Todo[] =>
   todos.map((todo) => ({
     ...todo,
     text: todo.id === id ? text : todo.text,
   }));
 
-export const toggleTodo = (todos: Todo[], id: number): Todo[] =>
+const toggleTodo = (todos: Todo[], id: number): Todo[] =>
   todos.map((todo) => ({
     ...todo,
     done: todo.id === id ? !todo.done : todo.done,
   }));
 
-export const removeTodo = (todos: Todo[], id: number): Todo[] =>
+const removeTodo = (todos: Todo[], id: number): Todo[] =>
   todos.filter((todo) => todo.id !== id);
 
-export const addTodo = (todos: Todo[], text: string): Todo[] => [
+const addTodo = (todos: Todo[], text: string): Todo[] => [
   ...todos,
   {
     id: Math.max(0, Math.max(...todos.map(({ id }) => id))) + 1,
@@ -28,3 +30,38 @@ export const addTodo = (todos: Todo[], text: string): Todo[] => [
     done: false,
   },
 ];
+
+// Galactic implementation
+const [useTodosList, setTodosList] = createGalactic<Todo[]>([]);
+const [useNewTodo] = createGalactic('');
+
+export function load(todos: Todo[]) {
+  setTodosList(todos);
+}
+
+export function useTodos(){
+  const [todos, todosSet] = useTodosList();
+  const [newTodo, newTodoSet]= useNewTodo();
+
+  return {
+    todos,
+    newTodo,
+    setNewTodo(text: string) {
+      newTodoSet(text);
+    },
+    add(){
+      todosSet(addTodo(todos, newTodo));
+      newTodoSet("");
+    },
+    toggle(id: number){
+      todosSet(toggleTodo(todos, id));
+    },
+    remove(id: number){
+      todosSet(removeTodo(todos, id));
+    },
+    update(id: number, text: string){
+      todosSet(updateTodo(todos, id, text));
+    }
+  }
+}
+
